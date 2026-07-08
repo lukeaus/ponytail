@@ -14,6 +14,7 @@ const {
   clearMode,
   isCodex,
   isCopilot,
+  isFactory,
   setMode,
   writeHookOutput,
 } = require('./ponytail-runtime');
@@ -26,7 +27,7 @@ const mode = getDefaultMode();
 // "off" mode — skip activation entirely, don't write flag or emit rules
 if (mode === 'off') {
   clearMode();
-  const hookOutput = (isCodex || isCopilot) ? '' : 'OK';
+  const hookOutput = (isCodex || isCopilot || isFactory) ? '' : 'OK';
   writeHookOutput('SessionStart', 'off', hookOutput);
   process.exit(0);
 }
@@ -42,7 +43,7 @@ try {
 let output = getPonytailInstructions(mode);
 
 // 3. Detect missing statusline config — nudge Claude to help set it up
-if (!isCodex && !isCopilot) try {
+if (!isCodex && !isCopilot && !isFactory) try {
   let hasStatusline = false;
   if (fs.existsSync(settingsPath)) {
     // Strip UTF-8 BOM some editors prepend on Windows (breaks JSON.parse)
@@ -66,7 +67,7 @@ if (!isCodex && !isCopilot) try {
       output += "\n\n" +
         "STATUSLINE SETUP NEEDED: The ponytail plugin includes a statusline badge showing active mode " +
         "(e.g. [PONYTAIL], [PONYTAIL:ULTRA]). It is not configured yet. " +
-        "To enable, add this to ~/.claude/settings.json: " +
+        "To enable, add this to " + settingsPath + ": " +
         statusLineSnippet + " " +
         "Proactively offer to set this up for the user on first interaction.";
     } else {
@@ -76,7 +77,7 @@ if (!isCodex && !isCopilot) try {
         "STATUSLINE SETUP NEEDED: The ponytail plugin includes a statusline badge showing active mode. " +
         "Its install path contains characters unsafe to embed in a shell command, so configure it manually: " +
         "add a statusLine command of type \"command\" that runs " + scriptName +
-        " from the plugin's hooks directory to ~/.claude/settings.json, quoting/escaping the path for your shell. " +
+        " from the plugin's hooks directory to " + settingsPath + ", quoting/escaping the path for your shell. " +
         "Proactively offer to set this up for the user on first interaction.";
     }
   }
